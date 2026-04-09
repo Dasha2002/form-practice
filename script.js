@@ -8,6 +8,64 @@ document.addEventListener('DOMContentLoaded', function() {
     const successMessage = document.getElementById('form-success');
     const errorMessage = document.getElementById('form-error');
 
+
+phoneInput.addEventListener("input", function (e) {
+    let initialValue = this.value;
+    let initialCursorPos = this.selectionStart;
+    let digits = this.value.replace(/\D/g, "");
+
+    if (digits.startsWith("7") || digits.startsWith("8")) {
+        digits = digits.slice(1);
+    }
+
+    let formattedValue = "+7";
+    if (digits.length > 0) {
+        formattedValue += " (" + digits.substring(0, 3);
+    }
+    if (digits.length >= 4) {
+        formattedValue += ") " + digits.substring(3, 6);
+    }
+    if (digits.length >= 7) {
+        formattedValue += "-" + digits.substring(6, 8);
+    }
+    if (digits.length >= 9) {
+        formattedValue += "-" + digits.substring(8, 10);
+    }
+
+    this.value = formattedValue;
+
+    let newCursorPos = initialCursorPos;
+    if (formattedValue.length > initialValue.length && initialCursorPos > 2) {
+        newCursorPos += formattedValue.length - initialValue.length;
+    }
+    this.setSelectionRange(newCursorPos, newCursorPos);
+});
+
+phoneInput.addEventListener("keydown", function (e) {
+    const cursorPos = this.selectionStart;
+
+    if (e.key === "Backspace" && cursorPos <= 2) {
+        e.preventDefault();
+    }
+    if (e.key === "Delete" && cursorPos < 2) {
+        e.preventDefault();
+    }
+});
+
+phoneInput.addEventListener("focus", function () {
+    if (this.value === "") {
+        this.value = "+7";
+        this.setSelectionRange(2, 2);
+    }
+});
+
+phoneInput.addEventListener("blur", function () {
+    if (this.value === "+7") {
+        this.value = "";
+    }
+});
+
+
     function showError(input, message) {
         const formGroup = input.parentElement;
         const errorDiv = formGroup.querySelector('.error-message');
@@ -39,9 +97,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         if (input.id === 'phone' && input.value) {
-            const phoneRegex = /^[\d\s\-\+\(\)]+$/;
-            if (!phoneRegex.test(input.value)) {
-                showError(input, 'Пожалуйста, введите корректный номер телефона.');
+            const digitsOnly = input.value.replace(/\D/g, '');
+            if (digitsOnly.length !== 11) {
+                showError(input, 'Пожалуйста, введите корректный номер телефона из 11 цифр.');
                 return false;
             }
         }
@@ -50,52 +108,51 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function handleSubmit(event) {
-        event.preventDefault(); 
+    event.preventDefault();
 
-        // Валидация всех полей
-        const isNameValid = validateField(nameInput);
-        const isEmailValid = validateField(emailInput);
-        const isPhoneValid = validateField(phoneInput);  
-        const isMessageValid = validateField(messageInput); 
+    const isNameValid = validateField(nameInput);
+    const isEmailValid = validateField(emailInput);
+    const isPhoneValid = validateField(phoneInput);
+    const isMessageValid = validateField(messageInput);
 
-        // Прерыв отправки, если хоть одно поле невалидно
-        if (!isNameValid || !isEmailValid || !isPhoneValid || !isMessageValid) {
-            console.log('Форма содержит ошибки.');
-            return;
-        }
-
-        // Состояние загругки
-        submitBtn.disabled = true;
-        submitBtn.classList.add('loading');
-        successMessage.style.display = 'none';
-        errorMessage.style.display = 'none';
-
-        // Имитация отправки на сервер
-        console.log('Отправка данных на сервер...');
-        
-        try {
-            // Имитация сетевого запроса с задержкой в 2 секунды
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            
-            // Имитация случайной ошибки сервера 
-            if (Math.random() < 0.1) { //(10% шанс)
-                throw new Error('Серверная ошибка');
-            }
-
-            // Обработка успешного ответа
-            console.log('Успешно отправлено!');
-            form.reset(); 
-            successMessage.style.display = 'block'; 
-
-        } catch (error) {
-            // Обработка ошибки
-            console.error('Ошибка отправки:', error);
-            errorMessage.style.display = 'block'; 
-        } finally {
-            submitBtn.disabled = false;
-            submitBtn.classList.remove('loading');
-        }
+    if (!isNameValid || !isEmailValid || !isPhoneValid || !isMessageValid) {
+        return;
     }
+
+    submitBtn.disabled = true;
+    submitBtn.classList.add('loading');
+
+    const formData = new FormData(form);
+
+    try {
+        const response = await fetch("submit.php", {
+            method: "POST",
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error("Server error");
+        }
+
+        const result = await response.json();
+
+        if (result.success) {
+            form.reset();
+            successMessage.style.display = "block";
+            errorMessage.style.display = "none";
+        } else {
+            throw new Error("PHP returned false");
+        }
+
+    } catch (error) {
+        console.error(error);
+        errorMessage.style.display = "block";
+        successMessage.style.display = "none";
+    }
+
+    submitBtn.disabled = false;
+    submitBtn.classList.remove('loading');
+}
 
     form.addEventListener('submit', handleSubmit);
 

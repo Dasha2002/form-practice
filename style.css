@@ -3,7 +3,7 @@ body {
 }
 :root {
     --primary-color: #3388ce;
-    --success-color: #a6f5b8;
+    --success-color: #286b38;
     --error-color: #952e38;
     --light-gray: #f4f4f4;
     --dark-gray: #333;
@@ -94,7 +94,6 @@ input:focus, textarea:focus {
     border: 1px solid var(--error-color);
 }
 
-
 button {
     display: block;
     width: 100%;
@@ -107,6 +106,7 @@ button {
     font-weight: bold;
     cursor: pointer;
     transition: background-color 0.3s ease;
+    position: relative; 
 }
 
 button:hover {
